@@ -1,9 +1,38 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <!-- 🚑 全局错误捕捉 (用于调试白屏) -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            // 忽略一些无关紧要的插件报错
+            if (msg.includes("Script error") && !url) return;
+            
+            alert("⚠️ 发生错误导致白屏：\n" + msg + "\n\n行号：" + line);
+            return false;
+        };
+        // 捕捉未处理的 Promise 错误 (如 API 连接失败)
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled rejection:', event.reason);
+            // alert("⚠️ 异步操作出错：\n" + event.reason); // 可选：如果太烦人可以注释掉
+        });
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mini Phone UI - Anime Style</title>
+    <!-- ✨ PWA 与 移动端优化配置 (Step 02 新增) -->
+    <!-- 1. 网页图标 (Favicon) - 使用 Emoji 避免 404 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
+    
+    <!-- 2. 苹果 iOS 全屏支持 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MiniPhone">
+    
+    <!-- 3. 安卓/桌面 PWA 主题色 -->
+    <meta name="theme-color" content="#fff0f5">
+    
+    <!-- 4. 针对 GitHub Pages 的基础路径修正 (可选，如果遇到路径问题可开启) -->
+    <!-- <base href="./"> -->
     <!-- 动态注入自定义字体的样式容器 -->
     <style id="custom-font-style"></style>
     <style>
@@ -773,7 +802,7 @@
         /* Range Sliders inside Settings Cells */
         .range-wrap { width: 100%; padding: 5px 0; }
         .range-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; color: var(--text-color); opacity: 0.8; }
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: var(--accent-color); margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; }
 
@@ -2109,7 +2138,8 @@ body.dark-mode .wx-menu-text { color: #999; }
         <div style="z-index:1; margin-top: 60px; color:#f1c40f; font-weight:bold; font-size:18px;">恭喜发财，大吉大利</div>
         <div onclick="wechatApp.sendRedPacketMsg()" style="width:80px; height:80px; background:#f1c40f; border-radius:50%; margin-top:60px; z-index:2; border:4px solid #f39c12; display:flex; justify-content:center; align-items:center; font-size:30px; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2);">開</div>
         <div style="position:absolute; bottom:10px; color:rgba(255,255,255,0.5); font-size:12px; cursor:pointer;" onclick="wechatApp.closeFeature('redpacket')">取消</div>
-    </div>
+   </div>
+</div>
 </div>
 
             <!-- 🔒已完成，暂时禁止修改该项目：设置中心 (Refactored Layout) -->
@@ -2781,7 +2811,6 @@ body.dark-mode .wx-menu-text { color: #999; }
                 </div>
             </div>
         </div>
-        </div> 
         
         <div id="toast"></div>
 
@@ -2856,6 +2885,41 @@ body.dark-mode .wx-menu-text { color: #999; }
                 <p style="font-size:13px; color:var(--dialog-text);">无法连接到 API 服务器，原因如下：</p>
                 <div class="error-details" id="error-modal-text"></div>
                 <button class="btn-primary" style="margin-top:15px; background:#eee; color:#333;" onclick="closeErrorModal()">关闭</button>
+            </div>
+        </div>
+
+    <!-- 5. 惊喜掉落弹窗 (图鉴卡片版) -->
+    <div id="loot-modal" class="modal-overlay">
+        <!-- 卡片主体：去掉了原本的默认 padding，由 CSS 控制布局 -->
+        <div class="modal-box almanac-card">
+            <!-- 关闭按钮 -->
+            <span class="modal-close-btn" onclick="closeLootModal()" style="z-index:10; color: #888;">×</span>
+            
+            <!-- 顶部光效背景 -->
+            <div class="almanac-shine"></div>
+            
+            <!-- 物品展示舞台 -->
+            <div class="almanac-icon-stage">
+                <div id="loot-icon" class="almanac-icon">🎁</div>
+                <!-- 稀有度标签 -->
+                <div id="loot-rarity-badge" class="almanac-badge">普通</div>
+            </div>
+
+            <!-- 信息详情区 -->
+            <div class="almanac-info">
+                <h3 id="loot-name" class="almanac-title">神秘物品</h3>
+                
+                <!-- 描述便签框 (PVZ 风格) -->
+                <div class="almanac-desc-box">
+                    <div style="font-size:10px; color:#a1c4fd; margin-bottom:4px; font-weight:bold; letter-spacing:1px;">STORY</div>
+                    <p id="loot-story">物品描述...</p>
+                </div>
+            </div>
+
+            <!-- 按钮：沿用之前的“空气感”风格 -->
+            <button class="btn-bottle" style="width:100%; margin-top:20px; background: #a1c4fd; color: white; box-shadow: 0 5px 15px rgba(161, 196, 253, 0.4);" onclick="closeLootModal()">
+                收入背包
+            </button>
             </div>
         </div>
 
@@ -5298,20 +5362,39 @@ ${rules.map((r, i) => `${i+1}. ${r}`).join('\n')}
                     replyList.innerHTML = '';
                 }
             },
-            // 发送回复动作 (升级版：互动即自动收藏)
+            // 发送回复动作 (修复增强版)
             sendReplyAction: function() {
+                console.log("[Bottle] 尝试发送回复...");
                 const input = document.getElementById('reply-input');
                 const content = input.value.trim();
-                if (!content) return; 
-                if (!this.currentViewingBottleId) return;
-
-                // 1. 尝试在“已收藏列表”中找 (旧友)
-                let updatedBottle = bottleStore.addReply(this.currentViewingBottleId, content);
                 
-                // 2. 如果没找到，尝试在“我扔出的”里找 (我的心事)
-                if(!updatedBottle) {
-                    updatedBottle = this.myBottles.find(b => b.id === this.currentViewingBottleId);
-                    if(updatedBottle) {
+                // 1. 检查输入
+                if (!content) {
+                    showToast("写点什么再发送吧~", "warning");
+                    return;
+                }
+                
+                // 2. 检查 ID
+                const bottleId = this.currentViewingBottleId;
+                if (!bottleId) {
+                    console.error("[Bottle] 错误：丢失当前瓶子ID");
+                    showToast("发送失败：找不到瓶子ID，请重新打开", "danger");
+                    return;
+                }
+
+                let updatedBottle = null;
+                let source = 'none';
+
+                // 3. 依次在三个池子中查找并更新
+                
+                // A. 尝试在【已收藏】中找 (数据库操作)
+                updatedBottle = bottleStore.addReply(bottleId, content);
+                if (updatedBottle) source = 'collected';
+
+                // B. 如果没找到，尝试在【我扔出的】中找
+                if (!updatedBottle) {
+                    updatedBottle = this.myBottles.find(b => b.id === bottleId);
+                    if (updatedBottle) {
                         if (!updatedBottle.replies) updatedBottle.replies = [];
                         updatedBottle.replies.push({
                             id: 'reply-' + Date.now(),
@@ -5320,14 +5403,18 @@ ${rules.map((r, i) => `${i+1}. ${r}`).join('\n')}
                             createdAt: Date.now()
                         });
                         localStorage.setItem(this.storageKey, JSON.stringify(this.myBottles));
+                        source = 'sent';
                     }
                 }
 
-                // 3. ✨ 核心升级：如果是在“临时池”里找 (新朋友)
-                if(!updatedBottle) {
-                    updatedBottle = this.seaBottles.find(b => b.id === this.currentViewingBottleId);
-                    if(updatedBottle) {
+                // C. 如果还没找到，尝试在【海里临时池】中找
+                if (!updatedBottle) {
+                    // 使用 findIndex 方便后续移除
+                    const seaIdx = this.seaBottles.findIndex(b => b.id === bottleId);
+                    if (seaIdx !== -1) {
+                        updatedBottle = this.seaBottles[seaIdx];
                         if (!updatedBottle.replies) updatedBottle.replies = [];
+                        
                         // 写入回复
                         updatedBottle.replies.push({
                             id: 'reply-' + Date.now(),
@@ -5336,25 +5423,31 @@ ${rules.map((r, i) => `${i+1}. ${r}`).join('\n')}
                             createdAt: Date.now()
                         });
                         
-                        // 🚨 触发自动收藏：只要回复了，就视为建立关系，永久保存
+                        // 🚨 触发自动收藏机制
+                        // 将这个临时瓶子转正，存入永久数据库
                         bottleStore.saveBottle(updatedBottle);
                         
-                        // 从临时池移除 (它现在已经是正式收藏的瓶子了)
-                        this.seaBottles = this.seaBottles.filter(b => b.id !== updatedBottle.id);
+                        // 从海里移除 (防止重复捞到)
+                        this.seaBottles.splice(seaIdx, 1);
                         
-                        console.log("互动建立，瓶子已自动归档");
+                        source = 'sea_temp';
                     }
                 }
 
-                if(updatedBottle) {
-                    showToast("回复已送达 (已自动收藏) 🌊");
+                console.log(`[Bottle] 回复结果: 来源=${source}, 成功=${!!updatedBottle}`);
+
+                // 4. 处理结果
+                if (updatedBottle) {
+                    showToast("回复已送达 🌊", "success");
                     this.renderReplies(updatedBottle);
                     input.value = ''; 
                     
-                    // 触发 AI 智能追答
+                    // 触发 AI 智能追答 (如果是 NPC)
                     if (updatedBottle.authorType === 'npc') {
                         this.handleAiFollowUp(updatedBottle);
                     }
+                } else {
+                    showToast("发送失败：瓶子可能已消失", "danger");
                 }
             },
 
@@ -8563,45 +8656,9 @@ ${contextStr}
 
     </script>
 
-    <!-- 5. 惊喜掉落弹窗 (图鉴卡片版) -->
-    <div id="loot-modal" class="modal-overlay">
-        <!-- 卡片主体：去掉了原本的默认 padding，由 CSS 控制布局 -->
-        <div class="modal-box almanac-card">
-            <!-- 关闭按钮 -->
-            <span class="modal-close-btn" onclick="closeLootModal()" style="z-index:10; color: #888;">×</span>
-            
-            <!-- 顶部光效背景 -->
-            <div class="almanac-shine"></div>
-            
-            <!-- 物品展示舞台 -->
-            <div class="almanac-icon-stage">
-                <div id="loot-icon" class="almanac-icon">🎁</div>
-                <!-- 稀有度标签 -->
-                <div id="loot-rarity-badge" class="almanac-badge">普通</div>
-            </div>
-
-            <!-- 信息详情区 -->
-            <div class="almanac-info">
-                <h3 id="loot-name" class="almanac-title">神秘物品</h3>
-                
-                <!-- 描述便签框 (PVZ 风格) -->
-                <div class="almanac-desc-box">
-                    <div style="font-size:10px; color:#a1c4fd; margin-bottom:4px; font-weight:bold; letter-spacing:1px;">STORY</div>
-                    <p id="loot-story">物品描述...</p>
-                </div>
-            </div>
-
-            <!-- 按钮：沿用之前的“空气感”风格 -->
-            <button class="btn-bottle" style="width:100%; margin-top:20px; background: #a1c4fd; color: white; box-shadow: 0 5px 15px rgba(161, 196, 253, 0.4);" onclick="closeLootModal()">
-                收入背包
-            </button>
-        </div>
-    </div>
-    
     <style>
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
     
 </body>
-
 </html>
